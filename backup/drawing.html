@@ -1,0 +1,49 @@
+<!DOCTYPE html> 
+<html>
+<head>
+	<link rel="stylesheet" href="styles.css" />
+	<!-- <script src="code.js"></script> -->
+</head>
+	
+	<h1>PrayerTiming</h1>
+	<canvas id="diagonal" style="padding:0px;border: 1px solid;left:500;top:500" width="550" height="600"></canvas>
+	<script src="praytimes.js"></script>
+	<script src="timespan.js"></script>
+	<script src="praytimesclock.js"></script>
+	<script>
+		//	---->>process drawing
+		
+		//
+		var date = new Date();
+		var latitude=32.7850;
+		var longitude =71.7803;
+		var timeZone = +5;
+		//
+		var clockStartAngle=-90;
+		var clockStartPie= 8;
+		var clockDrawRef =0;
+		//
+		var LGA =[[0,"white"],[0.2,"#F0F4F5"],[0.5,"E9F2F5"],[0.6,"F0F4F5"],[1,"white"]];//color shade for backgound
+		//		
+		
+		var NPies = new Drawings(date,latitude,longitude,timeZone,null,null,null,null,clockStartAngle,clockStartPie,clockDrawRef);
+		NPies.drawClock();
+		//NPies.drawDayNight([-230,225],20,10);
+		var img = new Image();
+		img.src="Allah.gif";
+		img.onLoad = function()
+		{
+		NPies.drawImg(img);//NPies.drawDayNight([-130,125],20,10);
+		}
+		//document.write("Please wait your position on earth is being calculated...");
+		//navigator.geolocation.getCurrentPosition(locationCB);
+		//=================================================>Other Methods
+		function locationCB(pos)
+		{
+		
+			latitude=pos.coords.latitude;
+			longitude=pos.coords.longitude;
+		}
+		</script>
+</body>
+</html>

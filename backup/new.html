@@ -1,0 +1,296 @@
+<html>
+<head>
+	<title>Prayer Timing</title>
+	<link href=style.css rel=stylesheet type=text/css media=all>
+
+	<script src=praytimes.js></script>
+	<script src=timespan.js></script>
+	<!-- <script src="http://maps.googleapis.com/maps/api/js?sensor=false"></script> -->
+	
+	<script src=praytimesclock.js></script>
+	<script>
+	var Calendar = {};
+	
+	function $(id)
+	{
+		return document.getElementById(id);
+	}
+
+	function setTime()
+	{
+		$('timeText').value=getFTime(new Date().toLocaleTimeString(),true);
+	}
+
+	setInterval(setTime,100);
+
+
+	window.onload = function()
+	{
+		var cityTxt = $('cityName');
+		var oldCityName;
+		
+		cityTxt.onfocus = function()
+		{
+			cityTxt.className = 'input_ed';
+			oldCityName = this.value;			
+		};
+		
+		cityTxt.onblur = function()
+		{			
+			this.className = 'input_ro';
+			var self = this;
+			
+			if(this.value != oldCityName)
+			{
+				/*
+				var req = new XMLHttpRequest();
+				
+				req.open('GET', 'getLatLng.php',  true)
+				
+				req.onreadystatechange = function()
+				{
+					console.log(req);
+					
+					if(req.readyState == 4)
+					{
+						var loc = JSON.parse(req.responseText);						
+						$('lat').value = loc.lat;						
+						$('lng').value = loc.lng;						
+					}
+				}
+				
+				req.send(null);
+				
+				*/
+				
+				var c = new google.maps.Geocoder();
+				$('status').innerText="locating your place..."
+				c.geocode({address:this.value}, function(results, status){
+					
+					if (status == google.maps.GeocoderStatus.OK)
+					{
+						$('lat').value = results[0].geometry.location.lat();
+						$('lng').value = results[0].geometry.location.lng();
+						$('cityName').value=results[0].formatted_address;
+						$('status').innerText="located place successfully."
+					}
+					
+					if (status == google.maps.GeocoderStatus.ZERO_RESULTS)
+					{
+						$('cityName').value=oldCityName;
+						$('status').innerText="new location not found."
+					}
+					
+					if (status == google.maps.GeocoderStatus.INVALID_REQUEST)
+					{
+						$('cityName').value=oldCityName;
+						$('status').innerText="Invalid city name."
+					}
+				});
+				
+				}
+			
+		};
+	}
+	
+	</script>
+</head>
+<body>
+
+<div id=header>
+<h1>Prayer Timing</h1>
+</div>
+<div id=main>
+	<div id=sidebarLeft class=sidebar>
+		<h2>Location Info</h2>
+		<table cellpadding=0 cellspacing=0 width=100%>
+			<tr>
+				<td width=50%>City Name</td>
+				<td align=left><input type=text id=cityName size=15 value=Thamewali class=input_ro title="type your location here"></td>
+			</tr>
+			<tr>
+				<td>Time Zone</td>
+				<td align=left><input type=text id=tZone readonly=true size=15 value="+5.0" class=input_ro></td>
+			</tr>
+			<tr>
+				<td>Latitude</td>
+				<td align=left><input type=text id=lat readonly=true size=15 value=32.4655 class=input_ro></td>
+			</tr>
+			<tr>
+				<td>Longitude</td>
+				<td align=left><input type=text id=lng readonly=true size=15 value=73.94465 class=input_ro></td>
+			</tr>
+		</table>	
+		<h2>Calender Settings</h2>	
+		<table cellpadding=0 cellspacing=0 width=100%>
+			<tr>
+				<td >Calculation</td>
+				<td align=left>
+					<select id=calculationMethod class=combo title="set prayers calculation method.">
+						<option value=ithna>Ithna Ashari</option>
+						<option value=karachi selected="selected">University of Islamic Sciences, Karachi</option>
+						<option value=america>Islamic Society of North America (ISNA)</option>
+						<option value=world>Muslim World League (MWL)</option>
+						<option value=makkah>Umm al-Qura, Makkah</option>
+						<option value=egypt>Egyptian General Authority of Survey</option>
+						<option value=custom>Custom Setting</option>
+						<option value=tehran>Institute of Geophysics, University of Tehran</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>Juristic</td>
+				<td align=left>
+				<select class=combo id=juristicMethod title="set juristic method.">
+				<option value=shaffi>Shaffi</option>
+				<option value=hanafi selected="selected">Hanafi</option>
+				</select>
+				</td>
+			</tr>
+			<tr>
+				<td>Adjusting</td>
+				<td align=left>
+				<select id=adjust class=combo title="set high latitude adjustment method.">
+				<option value=noAdj selected="selected">No adjustment</option>
+				<option value=middleAdj>middle of night</option>
+				<option value="night1/7Ajd">1/7th of night</option>
+				<option value=angleAdj>angle/60th of night</option>
+				</select>
+				</td>
+			</tr>
+		</table>
+		<h2>Drawings Settings</h2>
+		<table>
+		<tr>
+		<td width=35%>Start Angle</td>
+		<td align=left>
+			<select  name=draw class=combo title="set the start angle to start drawing from.">
+			<option>0°</option>
+			<option>90°</option>
+			<option>180°</option>
+			<option>270°</option>
+			</select>
+		</td>
+		</tr>
+		<tr>
+		<td>Draw Ref.</td>
+		<td>
+		<input type="radio" name="drawRef" value="drawRef"> Time  <input type="radio" name="drawRef" value="drawRef"> Pies
+		</td>
+		</tr>
+		</table>
+		<input type=button name=apply value=Apply onClick="apply()">
+		<label id=status style="position:absolute;left:50px;top:650px;color:gray">status</label>		
+	</div>
+	<div id=center>
+		<canvas id=diagonal width=550 height=600></canvas>
+<!-- 		<img src=Allah.gif id=img1 height=200px style="position:absolute;left:500;top:240;font-size:20px;background:none;border:none;">
+ -->		
+		<input type=text id=timeText readonly=true value=Time size=10 style="position:absolute;left:510;top:400;font-size:40px;background:none;border:none;">
+		<input type=text id=dateText readonly=true value=Time size=25 style="position:absolute;left:530;top:450;font-size:18px;background:none;border:none;">
+
+	</div>
+	<div id=sidebarRight class=sidebar>
+	<h2>Today Times</h2>
+	<table cellpadding=0 cellspacing=0 width=100%>
+		<tr>
+			<td width=40%>Fajir</td>
+			<td width=50% align=left><label id=fajir size=15>03:30 AM</label></td>
+		</tr>
+		<tr>
+			<td>Zohar</td>
+			<td align=left><label id=zohar size=15>06:30 AM</label></td>
+		</tr>
+		<tr>
+			<td>Aser</td>
+			<td align=left><label id=aser size=15>05:0 AM</label></td>
+		</tr>
+		<tr>
+			<td>Maghrib</td>
+			<td align=left><label id=maghrib size=15>12:30 PM</label></td>
+		</tr>
+		<tr>
+			<td>Isha</td>
+			<td align=left><label id=isha size=15 >07:30 PM</label></td>
+		</tr>
+		<tr>
+			<td>Sun Rise</td>
+			<td align=left><label id=sunrise size=15>05:30 AM</label></td>
+		</tr>
+		<tr>
+			<td>Sun Set</td>
+			<td align=left><label id=sunset size=15>08:30 PM</label></td>
+		</tr>
+	</table>
+</div>
+</div>
+<div id =footer>
+</div>
+<script>
+			var date = new Date();
+			c=document.getElementById('diagonal').getContext('2d');
+			$('dateText').value=(date.toLocaleDateString());
+			var latitude=$('lat').value || 32.7850;
+			var longitude =$('lng').value || 71.7803;
+			var timeZone = $('tZone').value || 5; 
+			var clockStartAngle=-90;
+			var clockStartPie= 1;
+			var clockDrawRef = 0;//setting clockDrawRef=0 makes clockStartPie=7 automatically(00:00 AM) from angle clockStartAngle
+			var LGA =[[0,"white"],[0.2,"#F0F4F5"],[0.5,"E9F2F5"],[0.6,"F0F4F5"],[1,"white"]];//color shade for backgound
+			
+			//document.write("Please wait your position on earth is being calculated...");
+			var times =prayTime.getPrayerTimes(date, latitude , longitude, timeZone);
+			var NPies = new Drawings(times,c,null,null,null,clockStartAngle,clockStartPie,clockDrawRef);
+			drawClck();
+			function drawClck()
+			{
+				NPies.drawClock();
+			}
+			setInterval(drawClck,1000);
+			//navigator.geolocation.getCurrentPosition(locationCB);
+			function locationCB(pos)
+			{
+			
+				latitude=pos.coords.latitude;
+				longitude=pos.coords.longitude;
+			}
+			function getFTime(time,seconds)
+			{
+				var PM = false;
+				var h =Number(time.substring(0,2));
+				var m = Number(time.substring(3,5));
+				var s=Number(time.substring(6,8));
+				if(h> 12)
+				{h = h%12;PM = true}
+				return (h<10?"0"+h:h)+
+				":"+(m<10?"0"+m:m)+
+				(seconds?(s>0?":"+(s<10?"0"+s:s):":00"):"")+
+				(PM?" PM":" AM");
+			}
+	
+			//$('cityName').value="Thamewali";
+			//$('lat').value=NPies.getLatitude();
+			//$('lon').value=NPies.getLongitude();
+			//$('tZone').value="+"+getFTime(NPies.getTimeZone().toString());
+			var times1=prayTime.getPrayerTimes(date, latitude , longitude, timeZone);
+			for(i=0;i<=6;i++)
+			times1[i]=getFTime(times1[i]);
+			$('fajir').innerText=times1[0];
+			$('sunrise').innerText=times1[1];
+			$('zohar').innerText=times1[2];
+			$('aser').innerText=times1[3];
+			$('sunset').innerText=times1[4];
+			$('maghrib').innerText=times1[5];
+			$('isha').innerText=times1[6];
+			function apply()
+			{
+			var calcM=$('calculationMethod').value;
+			var juriM=$('juristicMethod').value;
+			var adjuM=$('adjust').value;
+			alert(calcM+" "+juriM+ " " +adjuM);
+			}
+			
+			
+</script>
+</body>
+</html>

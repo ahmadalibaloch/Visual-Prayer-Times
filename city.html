@@ -1,0 +1,141 @@
+<html>
+<head>
+<script>
+function hidcity()
+{
+document.getElementById('city').style.visible=false;
+alert("close");
+}
+</script>
+<style>
+body{
+
+
+}
+#city
+{
+font-family: sans-serif;
+cursor:default;
+position:absolute;
+left:0;
+right:0;
+margin:0 auto;
+top:30%;
+width:350;
+height:250;
+border:1px solid black;
+border-radius:4px;
+box-shadow:10px 10px 50px #999999;
+opacity:0.7;
+-webkit-transition:all .6s ease;
+background:-webkit-linear-gradient(bottom,skyblue, white);/*not working*/
+}
+#titlebar
+{
+border-top-left-radius: 4px;
+border-top-right-radius: 4px;
+padding:5px 0;
+border-bottom:1px solid black;
+background:-webkit-linear-gradient(rgb(240,255,240), white);/*not working*/
+background:skyblue;
+position:relative;
+width:100%;
+height:20px;
+}
+
+#city input[type=button]
+{
+text-decoration:none;
+border-radius:10px;
+display:block;
+display:inline;
+float:right;
+margin:0 10px;
+padding:2px 5px 0px;
+vertical-align:middle;
+background-color:#4CBCF5;
+font-weight:bold;
+color:black;
+box-shadow:0 0 5px black;
+cursor:default;
+-webkit-transition:all .2s ease-in-out;
+}
+#city a:hover
+{
+box-shadow:0px 0px 3px black;
+color:rgba(0,0,0,0.7);
+}
+#city a:active
+{
+box-shadow:0px 0px 10px black;
+background-color:#3D97C4;
+color:rgba(255,255,255,0.7);
+}
+#btnClose
+{
+
+}
+#btnClose:active
+{
+color:rgba(255,0,0,0.8);
+
+}
+#btnClose:hover
+{
+box-shadow:0px 0px 3px black;
+color:rgba(0,0,0,0.7);
+}
+#titlebar p
+{
+display:inline;
+padding-left:10px;
+font-weight:bold;
+}
+
+#citybody 
+{
+height:70%;
+margin:5px;
+}
+#cityList{
+max-height:170px;
+width:100%;
+}
+</style>
+</head>
+<body>
+		<input type=button id=showCity value='Select City'>
+<div id=city>
+	<div id=titlebar>
+		<p>Select your city</p>
+		<!-- <a href="" onclick="getElementById('city').style.opacity=0.5;">X</a> -->
+		<input type=button value=X id=btnClose>
+	</div>
+	<div id=citybody>
+		<select multiple id=cityList>
+			<option>ahmad</option>
+			<option>ahmad1</option>
+			<option>ahmad</option>
+			<option>ahmad1</option>
+		</select>
+
+	</div>
+	<input type=button value='Add City' id=btnAddCity>
+	<input type=button value=Select id=btnOK>
+	
+		
+</div>
+</body>
+<script type='text/javascript'>
+function $(id){
+	return document.getElementById(id);
+}	
+//$('city').style.display='none';
+var cityarray = new Array('thamewali','mianwali','punjab','pakistan');
+$('showCity').onclick= function(){
+	$('city').style.display='block';
+	$('city').style.opacity=0.8;
+	//$('cityList').
+}
+</script>
+</html>

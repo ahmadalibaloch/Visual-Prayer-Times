@@ -1,0 +1,556 @@
+<html>
+	<head>
+		<title>Prayer Timing</title>
+		<link href=style.css rel=stylesheet type=text/css media=all>
+
+		<script src="praytimes.js" type='text/javascript'></script>
+		<script src="timespan.js" type='text/javascript'></script>
+		<script src="http://maps.googleapis.com/maps/api/js?sensor=false" type='text/javascript'></script>
+		<script src="praytimesclock.js" type='text/javascript'></script>
+		
+		<script type='text/javascript'>
+
+		function $(id){
+			return document.getElementById(id);
+		}	
+			function stat(sms){
+			$('status').innerText='• '+sms;}
+			window.onload = function(){
+				var cityTxt = $('cityName');
+				var oldCityName;
+				cityTxt.onmouseover = function(){
+					cityTxt.title=oldCityName || cityTxt.title;
+				}
+				cityTxt.onfocus = function(){
+					cityTxt.className = 'input_ed';
+					oldCityName = this.value;			
+					cityTxt.value="";
+				};
+				cityTxt.onblur = function(){
+					this.className = 'input_ro';
+					this.value = oldCityName;	
+				};
+				cityTxt.onkeyup = function(event){
+					var keynum;
+					if(window.event){		// IE
+						keynum = event.keyCode
+					}
+					else if(event.which){	// Netscape/Firefox/Opera
+						keynum = event.which
+					}
+					if(keynum==13){			//on Enter
+					var searchCity=this.value;
+					this.className = 'input_ro';
+					if(searchCity != oldCityName && searchCity !=""){
+						this.value="...";
+						stat("locating your place...");
+						var c = new google.maps.Geocoder();
+						c.geocode({address:searchCity}, function(results, status){					
+							if (status == google.maps.GeocoderStatus.OK){
+								latitude = Number(results[0].geometry.location.lat());
+								longitude = Number(results[0].geometry.location.lng());
+								$('cityName').value=oldCityName=results[0].formatted_address;
+								if(countryName!=oldCityName.split(',')[1]){
+								countryName=oldCityName.split(',')[1];
+								setTimeZone(latitude,longitude);
+								}
+							}
+							
+							if (status == google.maps.GeocoderStatus.ZERO_RESULTS){
+								$('cityName').value=oldCityName;
+								stat("new location not found.");
+							}
+							
+							if (status == google.maps.GeocoderStatus.INVALID_REQUEST){
+								$('cityName').value=oldCityName;
+								stat("Invalid city name.");
+							}
+						});			
+					}
+					else{
+						this.value=oldCityName;
+					}
+
+					}
+				};
+			};
+			function setTimeZone(lat,lng){
+				var _url = "http://api.geonames.org/timezoneJSON?lat="+
+				lat
+				+"&lng="+
+				lng
+				+"&username=ahmadalibaloch";
+				var req = new XMLHttpRequest();
+				req.open('GET', _url,  true)
+				req.onreadystatechange = function()
+				{			
+					if(req.readyState == 4)
+					{
+						var loc = JSON.parse(req.responseText);						
+						timeZone=$('tZone').value=loc.gmtOffset;
+						clock.setDate(new Date(Date.parse(loc.time)));
+						setTimeout(drawClck,100);
+						stat("located place successfully.");
+						setWeather(lat,lng);
+						startInterval();
+					}
+				}
+				req.send(null);
+			}
+			function setCity(lat,lng){
+				/*var _url = "http://api.geonames.org/findNearbyJSON?lat="+
+				lat
+				+"&lng="+
+				lng
+				+"&username=ahmadalibaloch";
+				var req = new XMLHttpRequest();
+				req.open('GET', _url,  true)
+				
+				req.onreadystatechange = function()
+				{			
+					if(req.readyState == 4)
+					{
+						var loc = JSON.parse(req.responseText);	
+						//console.log(loc);
+						$('cityName').value=loc.geonames[0].toponymName+', '+
+						loc.geonames[0].adminName1+', '+
+						loc.geonames[0].countryName;
+					}
+				}
+				req.send(null);*/
+				var c = new google.maps.Geocoder();
+				var latlng = new google.maps.LatLng(lat, lng);
+				c.geocode({'latLng': latlng}, function(results1, status1) {
+							if (status1 == google.maps.GeocoderStatus.OK)
+							{
+								$('cityName').value=oldCityName=results1[0].formatted_address;
+							}
+							
+							if (status1 == google.maps.GeocoderStatus.ZERO_RESULTS)
+							{
+								$('cityName').value=oldCityName;
+								stat("new city name not found.");
+							}
+							
+							if (status1 == google.maps.GeocoderStatus.INVALID_REQUEST)
+							{
+								$('cityName').value=oldCityName;
+								stat("Invalid city name.");
+							}
+				});
+			}
+			function setWeather(lat,lng){
+				var _url = "http://api.geonames.org/findNearByWeatherJSON?lat="+
+				lat
+				+"&lng="+
+				lng
+				+"&username=ahmadalibaloch";
+				var req = new XMLHttpRequest();
+				req.open('GET', _url,  true)
+				
+				req.onreadystatechange = function()
+				{			
+					if(req.readyState == 4)
+					{
+						var loc = JSON.parse(req.responseText).weatherObservation;	
+						if(loc!=null){
+						$('tem').innerText=loc.temperature+" `C";
+						$('hum').innerText=loc.humidity+"%";
+						$('clo').innerText=(loc.clouds=="n/a"?"sunny":loc.clouds);
+						$('dew').innerText=loc.dewPoint+" `F";
+						$('sta').innerText=loc.stationName;
+						$('win').innerText=windS(loc.windSpeed)+", "+windD(loc.windDirection);
+						}
+						else{
+						$('sta').innerText="No weather station available!";
+						$('tem').innerText="-";
+						$('hum').innerText="-";
+						$('clo').innerText="-";
+						$('dew').innerText="-";
+						$('win').innerText="-";
+						
+						}
+					}
+				}
+				req.send(null);
+			}
+			function windD(deg){
+				var res="";
+				if((deg<=11.25 || deg>348.75))
+				res="North";
+				else if(deg<=33.75)
+				res="North-northeast";
+				else if(deg<=56.25)
+				res ="NorthEast";
+				else if(deg<=78.75)
+				res="East-northeast";
+				else if(deg<=101.25)
+				res="East";
+				else if(deg<=123.75)
+				res="East-southeast";
+				else if(deg<=146.35)
+				res="SouthEast";
+				else if(deg<=168.75)
+				res="South-southeast";
+				else if(deg<=191.25)
+				res="South";
+				else if(deg<=213.75)
+				res="South-southwest";
+				else if(deg<=236.25)
+				res="Southwest";
+				else if(deg<=258.75)
+				res="West-southwest";
+				else if(deg<=281.25)
+				res="West";
+				else if(deg<=303.75)
+				res="West-northwest";
+				else if(deg<=326.25)
+				res="Northwest";
+				else if(deg<=348.75)
+				res="North-northwest";
+				res+=" ";
+				return res;
+			}
+			function windS(spe){
+				var res="";
+				if((spe>=0 && spe<=1))
+				res="Calm";
+				else if(spe>=1 && spe<=5)
+				res="Light air";
+				else if(spe>=6 && spe<=11)
+				res ="Light breez";
+				else if(spe>=12 && spe<=19)
+				res="Gentle breez";
+				else if(spe>=20 && spe<=28)
+				res="Moderate breez";
+				else if(spe>=29 && spe<=38)
+				res="Fresh breez";
+				else if(spe>=39 && spe<=49)
+				res="Strong breez";
+				else if(spe>=50 && spe<=61)
+				res="High wind, near gale";
+				else if(spe>=62 && spe<=74)
+				res="Gale";
+				else if(spe>=75 && spe<=88)
+				res="Severe gale";
+				else if(spe>=89 && spe<=102)
+				res="Storm";
+				else if(spe>=103 && spe<=117)
+				res="Violent storm";
+				else if(spe>=118 && spe<=133)
+				res="Hurricane";
+
+				res+=" ";
+				return res;
+			}
+	
+
+		</script>
+	</head>
+	<body onContextMenu="return false;">
+		<div id=header>
+		<p>worldwide &nbsp;visual&nbsp; <span id=bigHeader>Prayer Timing&nbsp;</span>&nbsp;&nbsp;and weather information</p>
+		<hr>
+		</div>
+		<div id=main>
+			<div id=sidebarLeft class=sidebar>
+				<h2>Location Info</h2>
+				<table cellpadding=2 cellspacing=0 width=100%>
+					<tr>
+						<td width=50%>City Name</td>
+						<td align=left><input type=text id=cityName size=19 value="you city name here" class=input_ro title="type your location here"></td>
+					</tr>
+					<tr>
+						<td>Time Zone</td>
+						<td align=left><input type=text id=tZone readonly=true size=15 value=0 class=input_ro></td>
+					</tr>
+				</table>	
+				<h2>Calender Settings</h2>	
+				<table cellpadding=5 cellspacing=0 width=100%>
+					<tr>
+						<td >Calculation</td>
+						<td align=left>
+							<select id=calcMethod class=combo title="set prayers calculation method.">
+								<option value=0>Ithna Ashari</option>
+								<option value=1 selected="selected">University of Islamic Sciences, Karachi</option>
+								<option value=2>Islamic Society of North America (ISNA)</option>
+								<option value=3>Muslim World League (MWL)</option>
+								<option value=4>Umm al-Qura, Makkah</option>
+								<option value=5>Egyptian General Authority of Survey</option>
+								<option value=6>Custom Setting</option>
+								<option value=7>Institute of Geophysics, University of Tehran</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>Juristic</td>
+						<td align=left>
+						<select class=combo id=juriMethod title="set juristic method.">
+						<option value=0>Shaffi</option>
+						<option value=1 selected="selected">Hanafi</option>
+						</select>
+						</td>
+					</tr>
+					<tr>
+						<td>Adjusting</td>
+						<td align=left>
+						<select id=adjustMethod class=combo title="high latitude adjustment method.">
+						<option value=0 selected="selected">No adjustment</option>
+						<option value=1>middle of night</option>
+						<option value=2>1/7th of night</option>
+						<option value=3>angle/60th of night</option>
+						</select>
+						</td>
+					</tr>
+				</table>
+				<h2>Drawings Settings</h2>
+				<table>
+				<tr>
+				<td>Start Angle</td>
+				<td align=left>
+				<input id=drawAngle class=range type=range min=0 max=360 value=270 step=45 onchange="showValue(this.value)"> 
+				<span id="angleDisplay">270</span>
+				</td>
+				</tr>
+				<tr>
+				<td>Draw Ref.</td>
+				<td width=35%>
+				<form name="radioForm" action="" onsubmit="return false;" onclick="setEn();">
+				<input type=radio name=drawRef checked value=0> Time  <input type=radio name=drawRef value=1> Pies
+				</form>
+				</td>
+				</tr>
+				<tr>
+				<td width=35%>Start Pie</td>
+				<td align=left>
+					<select  id=startPie class=combo title="pie to be drawn first from start angle.">
+					<option value=8>Fajir</option>
+					<option value=1>Day</option>
+					<option value=2>Zohar</option>
+					<option value=3>Aser</option>
+					<option value=4>SunSet</option>
+					<option value=5>Maghrib</option>
+					<option value=6>Isha</option>
+					<option value=7 selected=selected>Night</option>
+					</select>
+				</td>
+				</tr>
+				</table>
+				<input type=button id=btnApply value=Apply onClick="apply()">
+			</div>
+			<div id=center>
+				<canvas id=diagonal width=550 height=600></canvas>
+		 <!-- 		<img src=Allah.gif id=img1 height=200px style="position:absolute;left:500;top:240;font-size:20px;background:none;border:none;"> -->
+				<input type=text align=center id=nextPTime readonly=true size=32 style="left:500;top:300;font-size:15px;" class=clockTimes>
+				<input type=text id=timeText readonly=true value=Time size=18 style="left:480;top:350;font-size:30px;font-weight:normal;" class=clockTimes>
+				<input type=text id=dateText readonly=true value=Date size=32 style="left:500;top:420;font-size:15px;" class=clockTimes>
+			</div>
+			<div id=sidebarRight class=sidebar>
+			<h2>Today Times</h2>
+			<table cellpadding=4 cellspacing=0 width=100%>
+				<tr>
+					<td width=40%>Fajir</td>
+					<td width=50% align=left><label id=fajir size=15>--:--</label></td>
+				</tr>
+				<tr>
+					<td>Zohar</td>
+					<td align=left><label id=zohar size=15>--:--</label></td>
+				</tr>
+				<tr>
+					<td>Aser</td>
+					<td align=left><label id=aser size=15>--:--</label></td>
+				</tr>
+				<tr>
+					<td>Maghrib</td>
+					<td align=left><label id=maghrib size=15>--:--</label></td>
+				</tr>
+				<tr>
+					<td>Isha</td>
+					<td align=left><label id=isha size=15 >--:--</label></td>
+				</tr>
+				<tr>
+					<td>Sun Rise</td>
+					<td align=left><label id=sunrise size=15>--:--</label></td>
+				</tr>
+				<tr>
+					<td>Sun Set</td>
+					<td align=left><label id=sunset size=15>--:--</label></td>
+				</tr>
+			</table>
+				<h2>Weather Info</h2>
+			<table cellpadding=5 cellspacing=0 width=100%>
+				<tr>
+					<td width=40%>Temperature</td>
+					<td width=50% align=left><label id=tem size=15 >-</label></td>
+				</tr>
+				<tr>
+					<td>Humidity</td>
+					<td align=left><label id=hum size=15 >-</label></td>
+				</tr>
+				<tr>
+					<td>Dew Point</td>
+					<td align=left><label id=dew size=15 >-</label></td>
+				</tr>				
+				<tr>
+					<td>Weather</td>
+					<td align=left><label id=clo size=15 >-</label></td>
+				</tr>
+				<tr>
+					<td>Wind</td>
+					<td align=left><label id=win size=15 align=center >-</label></td>
+				</tr>
+				<tr>
+					<td colspan=2>•Weather Station<br>
+					<label id=sta size=30 align=center>-</label>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<label id=status >status</label>		
+		</div>
+		<div id =footer>
+		
+			<p>Prayer Timing &copy; worldwide <br>
+		Developed & Designed by <a class=contact href="mailto:ahmadalibaloch@gmail.com">Ahmad Ali<a>
+			</p>
+		</div>
+		<script type='text/javascript'>
+				c=document.getElementById('diagonal').getContext('2d');
+				c.save();
+				setEn();
+				$('dateText').value = (date=new Date()).toLocaleDateString();	
+				var s=getSize('diagonal');
+				//STARTING POINT OF WORK
+				var date, latitude=32.7850, longitude=71.7803, timeZone=5,clockStartAngle,clockDrawRef,clockStartPie,
+				times,clock,center;
+				//Settings
+				center=[0,-50];	
+				clock = new Drawings(c,center,s[0],s[1],null);
+				clock.setDate(new Date());//(new Date(Date.parse(loc.time))),(new Date().getTime()-clock.getDate())
+				function setNextPTime(){
+					$('nextPTime').value="Next Prayer "+getFTime(clock.getTimeTNP()+":"+(60-TNP.substring(6,8)),true,true);;
+				}
+				var TNP='';
+				function setTime(){
+					$('timeText').value=TNP=getFTime((clock.getDate().toTimeString()),true);
+					
+				}	
+				function showValue(newVal) { 
+					document.getElementById("angleDisplay").innerHTML = newVal; 
+				} 				
+				//Geolocatoin;
+				stat("Please accept locatoin sharing offer from browser to calculate your place times. OR set your location manually by entering city name.");
+				function locCB(pos){
+					latitude=Number(pos.coords.latitude);
+					longitude=Number(pos.coords.longitude);
+					setTimeZone(latitude,longitude);
+					setCity(pos.coords.latitude,pos.coords.longitude);
+					stat("your location found. getting other info about the location.");
+				}			
+				function handleLocationError(error){ 
+					switch(error.code){ 
+					case 0: 
+						stat("There was an error while retrieving your location. Please set locatoin manually by entering city name.  Error:" +  
+							error.message); 
+					break; 
+					case 1: 
+						stat("The user prevented this page from retrieving a location. Please set locatoin manually by entering city name. "); 
+					break; 
+					case 2: 
+						stat("The browser was unable to determine your location. Please set locatoin manually by entering city name.  Error: " +  
+							error.message); 
+					break; 
+					case 3: 
+						stat("The browser timed out before retrieving the location. Please set locatoin manually by entering city name. Error:"); 
+					break; 
+					} 
+				} 
+				navigator.geolocation.getCurrentPosition(locCB,handleLocationError);
+				
+				function drawClck(){
+					clock.drawClock();
+				}
+				var cd=""; //clockDrawInterval
+				function startInterval(){
+				setValues();
+				//c.restore();
+				//c.save();
+				clock.setClk(times,clockStartAngle,clockStartPie,clockDrawRef);
+				setInterval(drawClck,10000);
+				setTextValues();
+				}		
+				function setValues(){
+					clockStartAngle=(Number($('drawAngle').value));//-90;
+					clockDrawRef = getCheckedValue(document.forms['radioForm'].elements['drawRef']);//setting clockDrawRef=0 makes clockStartPie=7 automatically(00:00 AM) from angle clockStartAngle
+					clockStartPie= (clockDrawRef==0)?7:Number($('startPie').value);
+					prayTime.setCalcMethod((Number($('calcMethod').value)));
+					prayTime.setAsrMethod((Number($('juriMethod').value)));
+					prayTime.setHighLatsMethod((Number($('adjustMethod').value)));
+					times =prayTime.getPrayerTimes(date, latitude , longitude, timeZone);
+				}
+				function getFTime(time,seconds,ampm){
+					var timeArr=time.split(':');
+					var PM = false;
+					var h =Number(timeArr[0] || 0);
+					var m =Number(timeArr[1]|| 0);
+					var s = Number(timeArr[2]!=null?timeArr[2].split(' ')[0]: 0);
+					if(h> 12)
+					{h = h%12;PM = true;}
+					return (h<10?'0'+h:h)+":"+
+					(m<10?'0'+m:m)+
+					(seconds?':'+(s<10?'0'+s:s):'')+
+					(!ampm?(PM?" PM":" AM"):"");
+				}
+				function setTextValues(){
+					var times1=prayTime.getPrayerTimes(date, latitude , longitude, timeZone);
+					for(i=0;i<=6;i++)
+					times1[i]=getFTime(times1[i]);
+					$('fajir').innerText=(times1[0]);
+					$('sunrise').innerText=(times1[1]);
+					$('zohar').innerText=(times1[2]);
+					$('aser').innerText=(times1[3]);
+					$('sunset').innerText=(times1[4]);
+					$('maghrib').innerText=(times1[5]);
+					$('isha').innerText=(times1[6]);
+				}
+				function getCheckedValue(radioObj){
+					if(!radioObj)
+						return "";
+					var radioLength = radioObj.length;
+					if(radioLength == undefined)
+						if(radioObj.checked)
+							return radioObj.value;
+						else
+							return "";
+					for(var i = 0; i < radioLength; i++) {
+						if(radioObj[i].checked) {
+							return radioObj[i].value;
+						}
+					}
+					return "";
+				}
+				function setEn(){
+					if(getCheckedValue(document.forms['radioForm'].elements['drawRef'])==0){
+						$('startPie').disabled=true;
+						startPie.options[7].selected=1;
+					}
+					else{
+						$('startPie').disabled=false;
+					}
+				}
+				function getSize(element){
+				var width=$(element).width,
+				height=$(element).height,
+				smallest=width<height?width:height;
+				var radius = smallest*0.272727272727272727;
+				var pieWidth = smallest*0.1363636363636363636;
+				return [radius,pieWidth];
+				}
+				function apply(){
+				startInterval();
+				}
+								//
+				setInterval(setTime,1000);
+		</script>
+</body>
+</html>
